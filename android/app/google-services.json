@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "724549229393",
+    "project_id": "nutria-7f396",
+    "storage_bucket": "nutria-7f396.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:724549229393:android:e825e313e051a08b4d5170",
+        "android_client_info": {
+          "package_name": "com.example.nutria"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "724549229393-1spp6g1dk0dkisb4jq1uqalu4crt4hmr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.nutria",
+            "certificate_hash": "88b4f8f8beb7c13341c324bb5be54ffbe331a1d5"
+          }
+        },
+        {
+          "client_id": "724549229393-vmduu1i1dl1vnb64l1lu30efmc6k6dbg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGuAZ6H1446FcPRQq_20fWDUr7EoeWaXk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "724549229393-vmduu1i1dl1vnb64l1lu30efmc6k6dbg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
