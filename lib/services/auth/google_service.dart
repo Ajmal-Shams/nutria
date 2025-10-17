@@ -33,7 +33,7 @@ class GoogleAuthService {
 
   /// Save Google user data to Django backend
 Future<void> _saveUserToDjango(GoogleSignInAccount user, BuildContext context) async {
-  const String apiUrl = 'http://10.10.160.214:8000/api/save-user/';
+  const String apiUrl = 'http://172.20.10.3:8000/api/save-user/';
 
   final response = await http.post(
     Uri.parse(apiUrl),

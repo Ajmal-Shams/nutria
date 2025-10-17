@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nutria/screens/auth/login.dart';
 import 'package:nutria/screens/home/add_story_screen.dart';
 import 'package:nutria/screens/home/home_screen.dart';
+import 'package:nutria/screens/profile/saved_posts_screen.dart';
 import 'package:nutria/screens/recipe/recipe_search_screen.dart';
 import 'package:nutria/services/auth/google_service.dart'; // 👈 Import auth service
 
@@ -49,10 +50,10 @@ class _NavbarState extends State<Navbar> {
         selectedScreen = HomeScreen(user: widget.user);
         break;
       case 1:
-        selectedScreen = const RecipeSearchScreen();
+        selectedScreen =  RecipeSearchScreen(user: widget.user);
         break;
       case 2:
-        selectedScreen = AddStoryScreen(user: widget.user);
+        selectedScreen = SavedPostsScreen(user: widget.user);
         break;
       default:
         selectedScreen = HomeScreen(user: widget.user);

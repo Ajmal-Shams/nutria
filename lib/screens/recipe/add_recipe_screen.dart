@@ -2,10 +2,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart'; // 👈 NEW
 
 class AddRecipeScreen extends StatefulWidget {
-  const AddRecipeScreen({super.key});
+  final GoogleSignInAccount? user;
+
+  const AddRecipeScreen({super.key, this.user});
 
   @override
   State<AddRecipeScreen> createState() => _AddRecipeScreenState();
@@ -19,63 +23,70 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final TextEditingController _instructionsController = TextEditingController();
   final TextEditingController _cuisineController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
-  final TextEditingController _imageUrlController = TextEditingController();
-
+  File? _imageFile;
   bool _isSaving = false;
 
-  Future<String> _getLocalRecipesPath() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return '${dir.path}/recipes.json';
-  }
-
-  String _generateCleanedIngredients(String raw) {
-    return raw
-        .toLowerCase()
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .join(',');
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _imageFile = File(picked.path);
+      });
+    }
   }
 
   Future<void> _saveRecipe() async {
     if (!_formKey.currentState!.validate()) return;
+    if (widget.user?.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be signed in to save recipes!')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
-      final localPath = await _getLocalRecipesPath();
-      final file = File(localPath);
+      final uri = Uri.parse('http://172.20.10.3:8000/api/recipes/add/');
 
-      // Ensure file exists
-      if (!await file.exists()) {
-        // Should not happen, but safe fallback
-        await file.writeAsString('[]');
+      // Create multipart request
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add text fields
+      request.fields['title'] = _nameController.text.trim();
+      request.fields['ingredients'] = _ingredientsController.text.trim();
+      request.fields['instructions'] = _instructionsController.text.trim();
+      request.fields['cuisine'] = _cuisineController.text.trim();
+      request.fields['total_time_mins'] =
+          (int.tryParse(_timeController.text.trim()) ?? 45).toString();
+      request.fields['author_email'] = widget.user!.email!;
+
+      // Add image if selected
+      if (_imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('image', _imageFile!.path),
+        );
       }
 
-      final jsonString = await file.readAsString();
-      List<dynamic> recipes = json.decode(jsonString);
+      final response = await request.send();
 
-      final newRecipe = {
-        "TranslatedRecipeName": _nameController.text.trim(),
-        "TranslatedIngredients": _ingredientsController.text.trim(),
-        "TotalTimeInMins": int.tryParse(_timeController.text.trim()) ?? 45,
-        "Cuisine": _cuisineController.text.trim(),
-        "TranslatedInstructions": _instructionsController.text.trim(),
-        "URL": "",
-        "Cleaned-Ingredients": _generateCleanedIngredients(_ingredientsController.text.trim()),
-        "image-url": _imageUrlController.text.trim(),
-        "Ingredient-count": _ingredientsController.text.split(',').length,
-      };
-
-      recipes.add(newRecipe);
-      await file.writeAsString(json.encode(recipes));
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Recipe saved successfully!')),
-      );
-
-      Navigator.of(context).pop(true); // return true to signal refresh
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Recipe saved successfully!')),
+        );
+        Navigator.of(context).pop(true);
+      } else {
+        String responseBody = await response.stream.bytesToString();
+        final error = jsonDecode(responseBody);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Save failed: ${error.toString()}')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Save failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Network error: $e')),
+      );
     } finally {
       setState(() => _isSaving = false);
     }
@@ -122,11 +133,19 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Total Time (mins)'),
               ),
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Image URL (Optional)',
-                  hintText: 'https://example.com/recipe.jpg',
+              const SizedBox(height: 16),
+              // Image Preview & Picker
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _imageFile == null
+                      ? const Center(child: Text('📷 Tap to add photo'))
+                      : Image.file(_imageFile!, fit: BoxFit.cover),
                 ),
               ),
               const SizedBox(height: 24),
@@ -146,4 +165,4 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       ),
     );
   }
-}
+} 

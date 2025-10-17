@@ -145,7 +145,7 @@ class _AddStoryScreenState extends State<AddStoryScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final uri = Uri.parse("http://10.10.160.214:8000/api/stories/");
+      final uri = Uri.parse("http://172.20.10.3:8000/api/stories/");
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['username'] = widget.user?.displayName ?? 'Unknown';

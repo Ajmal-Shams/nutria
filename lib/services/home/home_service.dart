@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class HomeService {
-  static const String baseUrl = 'http://10.10.160.214:8000/api';
+  static const String baseUrl = 'http://172.20.10.3:8000/api';
 
   // Fetch all posts with username to get like status
   static Future<List<dynamic>> fetchPosts({String? username}) async {
