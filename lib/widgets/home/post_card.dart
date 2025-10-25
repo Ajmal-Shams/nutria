@@ -1,4 +1,4 @@
-// lib/widgets/post_card.dart
+// lib/widgets/home/post_card.dart
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -107,7 +107,6 @@ class _PostCardState extends State<PostCard> {
 
     final visiblePercentage = info.visibleFraction * 100;
     
-    // Play video when at least 50% is visible
     if (visiblePercentage >= 50) {
       if (!_isVisible) {
         setState(() => _isVisible = true);
@@ -115,7 +114,6 @@ class _PostCardState extends State<PostCard> {
         debugPrint('▶️ Video playing (${visiblePercentage.toStringAsFixed(0)}% visible)');
       }
     } else {
-      // Pause when less than 50% visible
       if (_isVisible) {
         setState(() => _isVisible = false);
         _videoController!.pause();
@@ -198,7 +196,7 @@ class _PostCardState extends State<PostCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       builder: (_) => CommentSheet(
         comments: _getComments(),
         post_id: _getPostId(),
@@ -227,9 +225,7 @@ class _PostCardState extends State<PostCard> {
     final postId = widget.post['post_id'] ?? '';
 
     if (username == null || postId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to save post: missing user or post ID')),
-      );
+      _showCustomSnackBar('Unable to save post: missing user or post ID', isError: true);
       return;
     }
 
@@ -244,23 +240,47 @@ class _PostCardState extends State<PostCard> {
           _isSaved = result['is_saved'] ?? !_isSaved!;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isSaved == true ? 'Post saved!' : 'Post removed from saved'),
-            duration: const Duration(seconds: 1),
-          ),
+        _showCustomSnackBar(
+          _isSaved == true ? 'Post saved!' : 'Post removed from saved',
+          isError: false,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update save status: $e')),
-        );
+        _showCustomSnackBar('Failed to update save status: $e', isError: true);
         setState(() {
           _isSaved = !_isSaved!;
         });
       }
     }
+  }
+
+  void _showCustomSnackBar(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red.shade700 : const Color(0xFF8B5E3C),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -284,39 +304,54 @@ class _PostCardState extends State<PostCard> {
               VideoPlayer(_videoController!),
               if (!_videoController!.value.isPlaying)
                 Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black45,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5E3C).withOpacity(0.9),
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8B5E3C).withOpacity(0.4),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.all(16),
                   child: const Icon(
-                    Icons.play_arrow,
+                    Icons.play_arrow_rounded,
                     color: Colors.white,
-                    size: 50,
+                    size: 56,
                   ),
                 ),
               Positioned(
-                bottom: 10,
-                right: 10,
+                bottom: 16,
+                right: 16,
                 child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black45,
-                    shape: BoxShape.circle,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: IconButton(
-                    icon: Icon(
-                      _videoController!.value.volume > 0
-                          ? Icons.volume_up
-                          : Icons.volume_off,
-                      color: Colors.white,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _videoController!.setVolume(
+                            _videoController!.value.volume > 0 ? 0 : 1,
+                          );
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Icon(
+                          _videoController!.value.volume > 0
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _videoController!.setVolume(
-                          _videoController!.value.volume > 0 ? 0 : 1,
-                        );
-                      });
-                    },
                   ),
                 ),
               ),
@@ -328,25 +363,50 @@ class _PostCardState extends State<PostCard> {
       mediaWidget = AspectRatio(
         aspectRatio: 16 / 9,
         child: Container(
-          color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          color: Colors.black87,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5E3C).withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const CircularProgressIndicator(
+                color: Color(0xFF8B5E3C),
+                strokeWidth: 3,
+              ),
+            ),
           ),
         ),
       );
     } else if (isVideo) {
       mediaWidget = Container(
         height: 300,
-        color: Colors.black,
-        child: const Center(
+        color: Colors.black87,
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, color: Colors.white70, size: 60),
-              SizedBox(height: 10),
-              Text(
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white70,
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
                 'Failed to load video',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -362,15 +422,42 @@ class _PostCardState extends State<PostCard> {
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              color: Colors.grey[300],
-              child: const Center(child: CircularProgressIndicator()),
+              color: const Color(0xFFF5E8C7).withOpacity(0.3),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: const Color(0xFF8B5E3C),
+                  strokeWidth: 3,
+                ),
+              ),
             );
           },
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: Colors.grey[300],
-              child: const Center(
-                child: Icon(Icons.broken_image, size: 60, color: Colors.grey),
+              color: const Color(0xFFF5E8C7).withOpacity(0.3),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.broken_image_rounded,
+                      size: 64,
+                      color: const Color(0xFF8B5E3C).withOpacity(0.4),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Failed to load image',
+                      style: TextStyle(
+                        color: const Color(0xFF8B5E3C).withOpacity(0.6),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -379,116 +466,256 @@ class _PostCardState extends State<PostCard> {
     } else if (mediaUrl.isNotEmpty) {
       mediaWidget = Container(
         height: 300,
-        color: Colors.grey[300],
-        child: const Center(child: Text('Unsupported media type')),
+        color: const Color(0xFFF5E8C7).withOpacity(0.3),
+        child: Center(
+          child: Text(
+            'Unsupported media type',
+            style: TextStyle(
+              color: const Color(0xFF8B5E3C).withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       );
     } else {
       mediaWidget = Container(
         height: 300,
-        color: Colors.grey[300],
-        child: const Center(child: Text('No media available')),
+        color: const Color(0xFFF5E8C7).withOpacity(0.3),
+        child: Center(
+          child: Text(
+            'No media available',
+            style: TextStyle(
+              color: const Color(0xFF8B5E3C).withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       );
     }
 
     return VisibilityDetector(
       key: Key('post-${_getPostId()}'),
       onVisibilityChanged: _onVisibilityChanged,
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with clickable profile
-            ListTile(
-              leading: GestureDetector(
-                onTap: _navigateToProfile,
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundImage: avatarUrl.isNotEmpty
-                      ? NetworkImage(avatarUrl)
-                      : null,
-                  child: avatarUrl.isEmpty
-                      ? const Icon(Icons.person, color: Colors.grey, size: 20)
-                      : null,
-                ),
-              ),
-              title: GestureDetector(
-                onTap: _navigateToProfile,
-                child: Text(
-                  widget.post['username'] ?? 'Unknown User',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              subtitle: Text(_getRelativeTime()),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              trailing: _isSaved == null
-                  ? const SizedBox(width: 24, height: 24)
-                  : IconButton(
-                      icon: Icon(
-                        _isSaved! ? Icons.bookmark : Icons.bookmark_border,
-                        color: _isSaved! ? Colors.blue : Colors.grey,
-                      ),
-                      onPressed: _toggleSave,
-                    ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B5E3C).withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-
-            // Media display
-            mediaWidget,
-
-            // Action buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.grey[700],
-                    ),
-                    onPressed: widget.onLike,
-                  ),
-                  Text('${widget.post['likes'] ?? 0} likes'),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.comment_outlined, color: Colors.black),
-                    onPressed: () => _openComments(
-                      context,
-                      widget.post['username'] ?? 'Anonymous',
-                    ),
-                  ),
-                  Text('${_getComments().length} comments'),
-                ],
-              ),
-            ),
-
-            // Caption
-            if ((widget.post['caption'] ?? '').isNotEmpty)
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with clickable profile
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: RichText(
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: [
-                      WidgetSpan(
-                        child: GestureDetector(
-                          onTap: _navigateToProfile,
-                          child: Text(
-                            '${widget.post['username']}: ',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _navigateToProfile,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF8B5E3C).withOpacity(0.2),
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundImage: avatarUrl.isNotEmpty
+                              ? NetworkImage(avatarUrl)
+                              : null,
+                          backgroundColor: const Color(0xFFF5E8C7),
+                          child: avatarUrl.isEmpty
+                              ? const Icon(
+                                  Icons.person_rounded,
+                                  color: Color(0xFF8B5E3C),
+                                  size: 24,
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _navigateToProfile,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.post['username'] ?? 'Unknown User',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Color(0xFF8B5E3C),
+                              ),
+                            ),
+                            Text(
+                              _getRelativeTime(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: const Color(0xFF8B5E3C).withOpacity(0.6),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_isSaved != null)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _isSaved!
+                              ? const Color(0xFF8B5E3C).withOpacity(0.1)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _toggleSave,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                _isSaved! ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                color: _isSaved!
+                                    ? const Color(0xFF8B5E3C)
+                                    : const Color(0xFF8B5E3C).withOpacity(0.5),
+                                size: 24,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      TextSpan(text: widget.post['caption']),
-                    ],
-                  ),
+                  ],
                 ),
               ),
 
-            const SizedBox(height: 8),
-          ],
+              // Media display
+              mediaWidget,
+
+              // Action buttons
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isLiked
+                            ? Colors.red.withOpacity(0.1)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: widget.onLike,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: isLiked ? Colors.red : const Color(0xFF8B5E3C).withOpacity(0.6),
+                              size: 26,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${widget.post['likes'] ?? 0}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: const Color(0xFF8B5E3C).withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _openComments(
+                            context,
+                            widget.post['username'] ?? 'Anonymous',
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.comment_outlined,
+                              color: const Color(0xFF8B5E3C).withOpacity(0.6),
+                              size: 26,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${_getComments().length}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: const Color(0xFF8B5E3C).withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Caption
+              if ((widget.post['caption'] ?? '').isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: const Color(0xFF8B5E3C).withOpacity(0.9),
+                        height: 1.4,
+                      ),
+                      children: [
+                        WidgetSpan(
+                          child: GestureDetector(
+                            onTap: _navigateToProfile,
+                            child: Text(
+                              '${widget.post['username']}: ',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF8B5E3C),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                        TextSpan(text: widget.post['caption']),
+                      ],
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );
